@@ -1,43 +1,40 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardMedia, Typography, Grid } from "@mui/material";
-import { cyan } from "@mui/material/colors";
+import { useQuery } from '@tanstack/react-query';
+import { Card, Flex, Spin, Alert } from 'antd';
+import { pocemonsApi } from './Api/pocemonApi.js';
+import cls from './pokemon.module.scss';
 
-export default function App() {
-    const [pokemons, setPokemons] = useState([]);
+export default function Pokemon() {
 
-    useEffect(() => {
-        fetch("https://pokeapi.co/api/v2/pokemon?limit=20")
-            .then((res) => res.json())
-            .then((data) => {
-                const formatted = data.results.map((pokemon) => {
-                    const id = pokemon.url.split("/").filter(Boolean).pop();
-                    const image = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
-                    return { name: pokemon.name, image };
-                });
-                setPokemons(formatted);
-            });
-    }, []);
+    const { data: pokemons, isLoading, isError, error } = useQuery({
+        queryKey: ['pocemons', 'list'],
+        queryFn: pocemonsApi,
+    });
+
+
+    if (isLoading) {
+        return <Flex justify="center" align="center" style={{ height: '100vh' }}><Spin size="large" /></Flex>;
+    }
+
+
+    if (isError) {
+        return <Alert message="Ошибка загрузки" description={error.message} type="error" showIcon />;
+    }
+
+
+    const pokemonList = Array.isArray(pokemons) ? pokemons : [];
 
     return (
-        <Grid container spacing={2} padding={2} sx={{ backgroundColor: cyan[50], minHeight: '100vh' }}>
-            {pokemons.map((p) => (
-                <Grid item xs={6} sm={4} md={3} key={p.name}>
-                    <Card sx={{ backgroundColor: cyan[100] }}>
-                        <CardMedia
-                            component="img"
-                            height="140"
-                            image={p.image}
-                            alt={p.name}
-                            sx={{ objectFit: "contain" }}
-                        />
-                        <CardContent>
-                            <Typography variant="h6" textAlign="center" textTransform="capitalize">
-                                {p.name}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
+        <div className={cls.grid}>
+            {pokemonList.map((poke) => (
+                <Card className={cls.card} key={poke.id}>
+                    <Flex justify="center" align="center" vertical> {/* Добавлен vertical, чтобы текст и фото не слипались */}
+                        <h1 className={cls.title}>{poke.name}</h1>
+                        {poke.sprites?.front_default && (
+                            <img className={cls.image} src={poke.sprites.front_default} alt={poke.name} />
+                        )}
+                    </Flex>
+                </Card>
             ))}
-        </Grid>
+        </div>
     );
 }
